@@ -1,42 +1,40 @@
-const express = require("express");
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+
 const app = express();
-const http = require("http");
-const { Server } = require("socket.io");
 const server = http.createServer(app);
-const io = new Server(server);
+const io = socketIo(server);
 
-//sets up each client that loads the HTML
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
+    res.sendFile(__dirname + "/index.html");
+  });
+  
+  const onlineUsers = new Map();
 
-//listens for each time a new client connects to the server via loading index.html
-io.on("connection", (socket) => {
-    console.log("a new user connected");
-    //send out an event callled "connection"
-  io.emit("connection", "a new user connected");
+io.on('connection', (socket) => {
+  console.log('New user connected');
 
-  //send a welcome msg
-  socket.emit("welcome New User")
+  socket.on('set nickname', (nickname) => {
+    socket.nickname = nickname;
+    onlineUsers.set(socket.id, nickname);
+    io.emit('update online users', [...onlineUsers.values()]);
+  });
 
-
-//send msg to all exceopt just conneted
-  socket.broadcast.emit("New User", "Someone connected to  the chat")
-
-  //listen to all "chat" 
   socket.on('chat message', (msg) => {
-    console.log('message: ' + msg);
-    io.emit('chat message', msg);
+    io.emit('chat message', `${socket.nickname}: ${msg}`);
   });
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
+    // Remove user from online users set
+    onlineUsers.delete(socket.id);
+    // SEND updated online users to all clients
+    io.emit('update online users', [...onlineUsers]);
   });
-
-
-
 });
 
-server.listen(3000, () => {
-  console.log("listening on *:3000");
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });

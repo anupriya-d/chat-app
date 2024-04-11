@@ -1,96 +1,112 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Socket.IO chat</title>
-    <style>
-        body {
-            margin: 0;
-            padding-bottom: 3rem;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat APP</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
 
-        #form {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 0.25rem;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            height: 3rem;
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-        }
+    #onlineUsers{
+        width: 400px;
+        padding: 20px;
+        margin: 20px auto;
+        background-color: #5dd66d;
+        border-radius: 7px;
 
-        #input {
-            border: none;
-            padding: 0 1rem;
-            flex-grow: 1;
-            border-radius: 2rem;
-            margin: 0.25rem;
-        }
+    }
 
-        #input:focus {
-            outline: none;
-        }
+    #heading{
+        width: 400px;
+        padding: 20px;
+        margin: 20px auto;
+        color: #5dd66d;
+        background-color: #000000;
+        border-radius: 7px;
+    }
 
-        #form>button {
-            background: #333;
-            border: none;
-            padding: 0 1rem;
-            margin: 0.25rem;
-            border-radius: 3px;
-            outline: none;
-            color: #fff;
-        }
+    #chat {
+      width: 400px;
+      margin: 20px auto;
+    }
 
-        #messages {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      font-weight: bold;
+    }
 
-        #messages>li {
-            padding: 0.5rem 1rem;
-        }
+    li {
+      margin-bottom: 5px;
+    }
 
-        #messages>li:nth-child(odd) {
-            background: #efefef;
-        }
-    </style>
+    form input {
+      width: 300px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    form button {
+      padding: 10px;
+      margin: 10px;
+      border: none;
+      background-color: #5dd66d;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
+    <div id="heading">QUICK CHAT😂 | CHAT HERE </div>
+  <div id="onlineUsers"></div>
+  <div id="chat">
     <ul id="messages"></ul>
     <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Send</button>
+      <input id="msg" autocomplete="off" /><button>Send</button>
     </form>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
+    let nickname = prompt("Please enter your nickname:");
 
-        const form = document.getElementById('form');
-        const input = document.getElementById('input');
-        const messages = document.getElementById('messages');
+    if (!nickname) {
+      alert("Nickname cannot be empty. Try again.");
+      location.reload();
+    }
+        socket.emit('set nickname', nickname);
 
-    form.addEventListener('submit', (e) => {
-     e.preventDefault();
-        if (input.value) {
-          socket.emit('chat message', input.value);
-          input.value = '';
-        }
+    document.getElementById('form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const input = document.getElementById('msg');
+      socket.emit('chat message', input.value);
+      input.value = '';
+      return false;
+    });
+
+    socket.on('chat message', function(msg){
+      const messages = document.getElementById('messages');
+      const li = document.createElement('li');
+      li.textContent = msg;
+      messages.appendChild(li);
+    });
+
+    socket.on('update online users', function(users){
+    const onlineUsersElement = document.getElementById('onlineUsers');
+    onlineUsersElement.innerHTML = '';
+    users.forEach(user => {
+      const userElement = document.createElement('div');
+      userElement.textContent = user;
+      onlineUsersElement.appendChild(userElement);
+    });
   });
-
-  socket.on('chat message', (msg) => {
-    const item = document.createElement('li');
-    item.textContent = msg;
-    messages.appendChild(item);
-    window.scrollTo(0, document.body.scrollHeight);
-  });
-    </script>
+  </script>
 </body>
-
 </html>
